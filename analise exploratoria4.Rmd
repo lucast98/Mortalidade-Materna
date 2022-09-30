@@ -1,0 +1,329 @@
+---
+title: "Análise exploratória sobre os dados de mortalidade materna"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+Nesse notebook, será feita uma análise exploratória dos dados de mortalidade materna presentes no SIM-SUS. Utilizamos os dados de 2009 até 2019.
+
+```{r}
+#data <- read.csv(
+#  file = 'C:/Users/lucas/Downloads/PIPAE/mortalidade_materna2.csv',
+#  encoding="UTF-8")
+```
+
+Filtramos a base para que fosse possível obter apenas a mortalidade materna.
+
+```{r}
+data_mortalidade_materna <- read.csv(
+  file = 'C:/Users/lucas/Downloads/PIPAE/data_mortalidade_materna.csv',
+  encoding="UTF-8")
+
+#data_mortalidade_materna <- data[
+#    data$tipo_obito_ocorrencia %in% c('Durante a gestação', 'Durante o abortamento', 
+#                                      'Após abortamento',
+#                                      'No parto ou até 1 hora após o parto',
+#                                      'No puerpério (até 42 dias do término da gestação)') | 
+#    data$tipo_morte_ocorrencia %in% c('Na gravidez', 'No parto', 'No aborto',
+#                                      'Até 42 dias após o parto'), ]
+```
+
+
+Filtrando por ano, temos a seguinte quantidade de mortalidade materna:
+
+```{r}
+library(ggplot2)
+library(scales)
+
+mortes_ano <- aggregate(sigla_uf~ano, data_mortalidade_materna, length)
+colnames(mortes_ano) <- c('ano', 'qtd_mortes')
+
+q <- ggplot(data = mortes_ano, mapping = aes(x = ano, y = qtd_mortes)) + geom_bar(stat = 'identity', position='dodge', colour='black') + scale_x_continuous(breaks=c(2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019)) + scale_y_continuous(breaks=c(1000, 1500, 2000, 2500))
+q 
+
+```
+
+Com isso, vamos ver como está distribuída a variável obito_parto:
+
+```{r}
+library(ggplot2)
+
+ggplot(data = data_mortalidade_materna, aes(x = obito_parto)) +
+    geom_bar()
+```
+Podemos ver também a distribuição da variável obito_gravidez:
+
+```{r}
+library(ggplot2)
+
+df_obito_gravidez <- aggregate(sigla_uf~obito_gravidez, data_mortalidade_materna, length)
+colnames(df_obito_gravidez) <- c('obito_gravidez', 'qtd_mortes')
+
+
+ggplot(data = df_obito_gravidez, aes(x = reorder(obito_gravidez, -qtd_mortes), y=qtd_mortes)) + geom_bar(stat = 'identity')
+
+```
+
+Temos também a variável obito_puerperio:
+
+```{r}
+library(ggplot2)
+
+df_obito_puerperio <- aggregate(sigla_uf~obito_puerperio, data_mortalidade_materna, length)
+colnames(df_obito_puerperio) <- c('obito_puerperio', 'qtd_mortes')
+
+
+ggplot(data = df_obito_puerperio, aes(x = reorder(obito_puerperio, -qtd_mortes), y=qtd_mortes)) + geom_bar(stat = 'identity')
+
+```
+
+Agora, vamos ver a distribuição da variável assistência médica:
+```{r}
+library(ggplot2)
+
+df_assistencia_medica <- aggregate(sigla_uf~assistencia_medica, data_mortalidade_materna, length)
+colnames(df_assistencia_medica) <- c('assistencia_medica', 'qtd_mortes')
+
+ggplot(data = df_assistencia_medica, aes(x = reorder(assistencia_medica, -qtd_mortes), y=qtd_mortes)) + geom_bar(stat = 'identity')
+
+```
+Agora, vamos analisar a distribuição de raças:
+```{r}
+library(ggplot2)
+
+df_raca_cor <- aggregate(sigla_uf~raca_cor, data_mortalidade_materna, length)
+colnames(df_raca_cor) <- c('raca_cor', 'qtd_mortes')
+
+ggplot(data = df_raca_cor, aes(x = reorder(raca_cor, -qtd_mortes), y=qtd_mortes)) + geom_bar(stat = 'identity')
+```
+
+Temos também por estado civil:
+```{r}
+library(ggplot2)
+
+df_estado_civil <- aggregate(sigla_uf~estado_civil, data_mortalidade_materna, length)
+colnames(df_estado_civil) <- c('estado_civil', 'qtd_mortes')
+
+
+ggplot(data = df_estado_civil, aes(x = reorder(estado_civil, -qtd_mortes), y=qtd_mortes)) + geom_bar(stat = 'identity')
+
+```
+Por escolaridade, temos:
+```{r}
+library(ggplot2)
+
+df_escolaridade <- aggregate(sigla_uf~escolaridade, data_mortalidade_materna, length)
+colnames(df_escolaridade) <- c('escolaridade', 'qtd_mortes')
+
+ggplot(data = df_escolaridade, aes(x = reorder(escolaridade, -qtd_mortes), y=qtd_mortes)) + geom_bar(stat = 'identity')
+```
+
+Agora, veremos o tipo de morte:
+```{r}
+library(ggplot2)
+
+df_tipo_morte <- aggregate(sigla_uf~tipo_morte_ocorrencia, data_mortalidade_materna, length)
+colnames(df_tipo_morte) <- c('tipo_morte_ocorrencia', 'qtd_mortes')
+
+ggplot(data = df_tipo_morte, aes(x = reorder(tipo_morte_ocorrencia, -qtd_mortes), y=qtd_mortes)) + geom_bar(stat = 'identity') + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+Agora, vamos analisar as faixas etárias das mortes:
+
+```{r}
+library(ggplot2)
+
+idades_obitos <- round((as.Date(data_mortalidade_materna$data_obito) - as.Date(data_mortalidade_materna$data_nascimento))/365, 0)
+
+faixa_etaria <- findInterval(idades_obitos, c(10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120))
+
+faixa_etaria_cat <- c()
+for (i in 1:length(faixa_etaria)){
+  if(is.na(faixa_etaria[i])){
+    faixa_etaria_cat <- append(faixa_etaria_cat, ' ')
+  } else if(faixa_etaria[i] == 1){
+    faixa_etaria_cat <- append(faixa_etaria_cat, '10 anos ou menos')
+  } else if (faixa_etaria[i] == 2){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 20 e 10 anos')
+  } else if (faixa_etaria[i] == 3){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 30 e 20 anos')
+  } else if (faixa_etaria[i] == 4){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 40 e 30 anos')
+  } else if (faixa_etaria[i] == 5){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 50 e 40 anos')
+  } else if (faixa_etaria[i] == 6){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 60 e 50 anos')
+  } else if (faixa_etaria[i] == 7){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 70 e 60 anos')
+  } else if (faixa_etaria[i] == 8){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 80 e 70 anos')
+  } else if (faixa_etaria[i] == 9){
+    faixa_etaria_cat <- append(faixa_etaria_cat, 'Entre 90 e 80 anos')
+  }
+}
+
+df_faixa_etaria_cat <- as.data.frame(table(faixa_etaria_cat))
+
+ggplot(data = df_faixa_etaria_cat, aes(x = reorder(faixa_etaria_cat, -Freq), y=Freq)) + geom_bar(stat = 'identity') + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+Primeiramente, vamos criar uma tabela de contingência entre as variáveis "raca_cor" e "tipo_morte_ocorrencia":
+```{r}
+data2 <- data_mortalidade_materna[, c("raca_cor", "tipo_morte_ocorrencia")]
+
+conTable = table(data2)
+conTable
+```
+Testaremos a independências das variáveis utilizado o teste do chi-quadrado. Definiremos a hipótese nula e alternativa e especificaremos o nível de significância da seguinte forma:
+
+$$ H_0 = \text{raca_cor e tipo_morte_ocorrencia são independentes} $$
+$$ H_a = \text{raca_cor e tipo_morte_ocorrencia não são independentes} $$
+O nível de significância é dado por $$ \alpha = 0.05 $$.
+Aplicando a função do chi-quadrado, temos:
+
+```{r}
+chisq.test(conTable)
+```
+
+Como o p-valor é menor que o alfa, a hipótese nula é rejeitada. Portanto, concluímos que raca_cor e tipo_morte_ocorrencia não são independentes.
+
+Agora, vamos medir a associação entre as duas variáveis. Para isso, utilizaremos o V de Cramer. Os valores do V de Cramer variam entre 0 e 1. Os valores altos do V de Cramer indicam uma relação mais forte entre as variáveis, e os valores menores para o V indicam uma relação fraca. 
+
+Aplicando a função do V de Cramer, temos:
+
+```{r}
+library(rcompanion)
+
+cramerV(conTable)
+```
+
+Com isso, temos que o V de Cramer indica que raca_cor possui um efeito baixo e estatisticamente significante em tipo_morte_ocorrencia.
+
+
+```{r}
+library(sqldf)
+relacao_raca_morte = sqldf('SELECT raca_cor, tipo_morte_ocorrencia, count(tipo_morte_ocorrencia) AS QTD FROM data2 GROUP BY raca_cor, tipo_morte_ocorrencia order by count(tipo_morte_ocorrencia) DESC')
+relacao_raca_morte
+
+```
+
+Agora, vamos criar uma tabela de contingência entre as variáveis "estado_civil" e "tipo_morte_ocorrencia":
+```{r}
+data2 <- data_mortalidade_materna[, c("estado_civil", "tipo_morte_ocorrencia")]
+#data2 <- data2[!data2$estado_civil == " ", ]
+#data2 <- data2[!data2$tipo_morte_ocorrencia == " ", ]
+
+conTable = table(data2)
+conTable
+
+```
+Testaremos a independências das variáveis utilizado o teste do chi-quadrado. Definiremos a hipótese nula e alternativa e especificaremos o nível de significância da seguinte forma:
+
+$$ H_0 = \text{estado_civil e tipo_morte_ocorrencia são independentes} $$
+$$ H_a = \text{estado_civil e tipo_morte_ocorrencia não são independentes} $$
+O nível de significância é dado por $$ \alpha = 0.05 $$.
+Aplicando a função do chi-quadrado, temos:
+
+```{r}
+chisq.test(conTable)
+```
+
+Como o p-valor é menor que o alfa, a hipótese nula é rejeitada. Portanto, concluímos que estado_civil e tipo_morte_ocorrencia não são independentes.
+
+Agora, vamos medir a associação entre as duas variáveis. Aplicando a função de V de Cramer, temos:
+
+```{r}
+library(rcompanion)
+
+cramerV(conTable)
+```
+
+Com isso, temos que o V de Cramer indica que estado_civil possui um efeito baixo e estatisticamente significante em tipo_morte_ocorrencia.
+
+
+```{r}
+library(sqldf)
+relacao_estadocivil_morte = sqldf('SELECT estado_civil, tipo_morte_ocorrencia, count(tipo_morte_ocorrencia) AS QTD FROM data2 GROUP BY estado_civil, tipo_morte_ocorrencia order by count(tipo_morte_ocorrencia) DESC')
+relacao_estadocivil_morte
+```
+Agora, vamos criar uma tabela de contingência entre as variáveis "escolaridade" e "tipo_morte_ocorrencia":
+```{r}
+data2 <- data_mortalidade_materna[, c("escolaridade", "tipo_morte_ocorrencia")]
+#data2 <- data2[!data2$escolaridade == " ", ]
+#data2 <- data2[!data2$tipo_morte_ocorrencia == " ", ]
+
+conTable = table(data2)
+conTable
+```
+Testaremos a independências das variáveis utilizado o teste do chi-quadrado. Definiremos a hipótese nula e alternativa e especificaremos o nível de significância da seguinte forma:
+
+$$ H_0 = \text{escolaridade e tipo_morte_ocorrencia são independentes} $$
+$$ H_a = \text{escolaridade e tipo_morte_ocorrencia não são independentes} $$
+O nível de significância é dado por $$ \alpha = 0.05 $$.
+Aplicando a função do chi-quadrado, temos:
+
+```{r}
+chisq.test(conTable)
+```
+
+Como o p-valor é menor que o alfa, a hipótese nula é rejeitada. Portanto, concluímos que escolaridade e tipo_morte_ocorrencia não são independentes.
+
+Agora, vamos medir a associação entre as duas variáveis. Aplicando a função de V de Cramer, temos:
+
+```{r}
+library(rcompanion)
+
+cramerV(conTable)
+```
+
+Com isso, temos que o V de Cramer indica que escolaridade possui um efeito baixo e estatisticamente significante em tipo_morte_ocorrencia.
+
+```{r}
+library(sqldf)
+relacao_escolaridade_morte = sqldf('SELECT escolaridade, tipo_morte_ocorrencia, count(tipo_morte_ocorrencia) AS QTD FROM data2 GROUP BY escolaridade, tipo_morte_ocorrencia order by count(tipo_morte_ocorrencia) DESC')
+relacao_escolaridade_morte
+```
+
+Agrupando mortalidade materna por estado:
+```{r}
+mortes_por_estado <- aggregate(data_mortalidade_materna[,2], list(data_mortalidade_materna$sigla_uf), length)
+mortes_por_estado[order(mortes_por_estado$x, decreasing=TRUE), ]
+```
+Maranhão é o 12º estado mais populoso do Brasil e é o 6º na lista acima. Os demais estados parecem fazer sentido em relação as suas distribuições populacionais.
+
+Vamos nos aprofundar mais na análise das mortes em SP. Analisaremos as mortes por ano:
+```{r}
+mortes_sp = data_mortalidade_materna[data_mortalidade_materna$sigla_uf=="SP",]
+tipos_mortes_sp <- table(mortes_sp$tipo_morte_ocorrencia)
+sort(tipos_mortes_sp, decreasing=TRUE)
+```
+
+Podemos agrupar pelas cidades de São Paulo, obtendo:
+```{r}
+mortes_cidades_sp <- aggregate(mortes_sp[,11], list(mortes_sp$municipio_ocorrencia), length)
+mortes_cidades_sp[order(mortes_cidades_sp$x, decreasing=TRUE), ]
+```
+
+Agora vamos ver em MA:
+```{r}
+mortes_ma = data_mortalidade_materna[data_mortalidade_materna$sigla_uf=="MA",]
+tipos_mortes_ma <- table(mortes_ma$tipo_morte_ocorrencia)
+sort(tipos_mortes_ma, decreasing = TRUE)
+```
+Podemos agrupar pelas cidades do Maranhão, obtendo:
+```{r}
+mortes_cidades_ma <- aggregate(mortes_ma[,11], list(mortes_ma$municipio_ocorrencia), length)
+mortes_cidades_ma[order(mortes_cidades_ma$x, decreasing=TRUE), ]
+```
+
+
+Agora vamos agrupar por regiões:
+```{r}
+mortes_por_regiao <- aggregate(data_mortalidade_materna[,42], list(data_mortalidade_materna$regiao), length)
+mortes_por_regiao[order(mortes_por_regiao$x, decreasing=TRUE), ]
+```
+
+
